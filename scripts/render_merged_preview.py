@@ -207,6 +207,14 @@ def build_html(
     adv = beginner["advanced"]
     fit_for = basic.get("fit_for", [])
     not_for = basic.get("not_for", [])
+    fit_for_block = ""
+    if fit_for:
+        fit_for_block = f"""
+            <article class="judgement-card fit">
+              <h3>适合你</h3>
+              {render_judgement_list(fit_for, "这次产物里还没有补这一栏。")}
+            </article>
+        """
     structure_model_json = js_object(structure["model"])
     focus_json = js_object(structure["focus"])
     process_srcdoc = process_html_to_srcdoc(process_html)
