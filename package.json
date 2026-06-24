@@ -1,0 +1,15 @@
+{
+  "name": "skill-analyzer",
+  "version": "1.0.0",
+  "description": "这个 skill 用来把一个现有 skill 拆成“可学习、可复用、可展示”的分析结果，尤其适合给 AI 初学者讲清楚：它解决什么问题、怎么触发、内部怎么组织、最后产出什么。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

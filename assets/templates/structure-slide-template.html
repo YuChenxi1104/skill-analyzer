@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>__TITLE__</title>
+  <style>
+    :root {
+      --paper: #fffdfa;
+      --ink: #2f312d;
+      --muted: #70746d;
+      --line: #d7d1c6;
+      --frame: #e7e1d7;
+      --shadow: 0 16px 44px rgba(47, 49, 45, 0.08);
+      --sans: "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+      --serif: "Georgia", "Times New Roman", "Noto Serif SC", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: linear-gradient(180deg, #f7f4ee 0%, #f2eee6 100%);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    body {
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1600px;
+      margin: 0 auto;
+      border-radius: 28px;
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--frame);
+      box-shadow: var(--shadow);
+      padding: 26px 26px 22px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3vw, 46px);
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .board {
+      margin-top: 18px;
+      border: 1px solid var(--frame);
+      border-radius: 22px;
+      background: #fffefd;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .board-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stage {
+      position: relative;
+      height: min(78vh, 920px);
+      min-height: 520px;
+      background: #fffefd;
+      cursor: grab;
+      overflow: hidden;
+    }
+
+    .stage.dragging {
+      cursor: grabbing;
+    }
+
+    .svg-shell {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: top left;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .tree-svg {
+      display: block;
+      background: #fffefd;
+    }
+
+    .hint {
+      position: absolute;
+      left: 16px;
+      bottom: 14px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--frame);
+      background: rgba(255, 253, 250, 0.95);
+      color: var(--muted);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+
+      .page {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .board-top {
+        display: block;
+      }
+
+      .board-top span + span {
+        display: block;
+        margin-top: 4px;
+      }
+
+      .stage {
+        height: 68vh;
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <p class="eyebrow">Skill Breakdown · 结构图</p>
+    <h1>__TITLE__</h1>
+    <p class="subtitle">直接在当前页面里查看结构图：拖动平移，滚轮缩放，双击回到初始视角。</p>
+
+    <div class="board">
+      <div class="board-top">
+        <span>阅读重点：先看主干，再看各组代表文件</span>
+        <span>白底 · 细线 · 同页交互阅读</span>
+      </div>
+      <div class="stage" id="viewerStage">
+        <div class="svg-shell" id="svgShell">
+          <svg id="detailSvg" class="tree-svg" viewBox="__VIEW_BOX__" width="__WIDTH__" height="__HEIGHT__" aria-label="__TITLE__"></svg>
+        </div>
+        <div class="hint">拖动平移 · 滚轮缩放 · 双击重置</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const detailSvg = document.getElementById("detailSvg");
+      const viewerStage = document.getElementById("viewerStage");
+      const svgShell = document.getElementById("svgShell");
+
+      const model = __MODEL_JSON__;
+      const focus = __FOCUS_JSON__;
+      const CHILD_NOTE_GAP_Y = 20;
+      const CHILD_NOTE_MIN_W = 228;
+      const CHILD_NOTE_MAX_W = 292;
+      const CHILD_NOTE_MAX_LINES = 2;
+      const GROUP_NOTE_GAP_Y = 20;
+      const GROUP_NOTE_MIN_W = 420;
+      const GROUP_NOTE_EXTRA_W = 280;
+      const GROUP_NOTE_MAX_LINES = 2;
+
+      function svgEl(name, attrs) {
+        const node = document.createElementNS(SVG_NS, name);
+        Object.keys(attrs || {}).forEach(function (key) {
+          node.setAttribute(key, attrs[key]);
+        });
+        return node;
+      }
+
+      function charWidthEstimate(char) {
+        if (/\s/.test(char)) return 3.8;
+        if (/[A-Za-z0-9/_\-.]/.test(char)) return 6.6;
+        if (/[\u2E80-\u9FFF\uF900-\uFAFF]/.test(char)) return 11.2;
+        return 8.2;
+      }
+
+      function textWidthEstimate(text) {
+        return Array.from(text).reduce(function (sum, char) {
+          return sum + charWidthEstimate(char);
+        }, 0);
+      }
+
+      function tokenizeText(text) {
+        return text.match(/[A-Za-z0-9/_\-.]+|./g) || [];
+      }
+
+      function getWrappedLines(text, maxWidth) {
+        const tokens = tokenizeText(text);
+        const lines = [];
+        let line = "";
+
+        for (let i = 0; i < tokens.length; i += 1) {
+          const token = tokens[i];
+          const testLine = line + token;
+          if (textWidthEstimate(testLine) > maxWidth && line) {
+            lines.push(line);
+            line = token;
+          } else {
+            line = testLine;
+          }
+        }
+
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      function fitLines(text, maxWidth, maxLines) {
+        const lines = getWrappedLines(text, maxWidth);
+        if (!maxLines || lines.length <= maxLines) return lines;
+
+        const trimmed = lines.slice(0, maxLines);
+        let last = trimmed[maxLines - 1];
+        while (last.length > 1 && textWidthEstimate(last + "…") > maxWidth) {
+          last = last.slice(0, -1);
+        }
+        trimmed[maxLines - 1] = last + "…";
+        return trimmed;
+      }
+
+      function wrapText(parent, text, x, y, maxWidth, lineHeight, attrs, maxLines) {
+        const node = svgEl("text", attrs || {});
+        const lines = fitLines(text, maxWidth, maxLines);
+
+        lines.forEach(function (line, index) {
+          const span = svgEl("tspan", { x: x, y: y + index * lineHeight });
+          span.textContent = line;
+          node.appendChild(span);
+        });
+
+        parent.appendChild(node);
+      }
+
+      function addLineText(parent, text, x, y, attrs) {
+        const node = svgEl("text", Object.assign({ x: x, y: y }, attrs || {}));
+        node.textContent = text;
+        parent.appendChild(node);
+      }
+
+      function curvePath(fromX, fromY, toX, toY) {
+        const midY = (fromY + toY) / 2;
+        return ["M", fromX, fromY, "C", fromX, midY, toX, midY, toX, toY].join(" ");
+      }
+
+      function drawNode(parent, node, options) {
+        const x = node.x - node.w / 2;
+        const y = node.y - node.h / 2;
+        const group = svgEl("g");
+        const compact = !!options.compact;
+        const noteText = (node.note || "").trim();
+
+        group.appendChild(svgEl("rect", {
+          x: x,
+          y: y,
+          width: node.w,
+          height: node.h,
+          rx: compact ? 6 : 10,
+          ry: compact ? 6 : 10,
+          fill: "#fffefd",
+          stroke: "#dbd5ca",
+          "stroke-width": compact ? 1.1 : 1.3
+        }));
+
+        addLineText(group, node.label, node.x, y + (compact ? 28 : 26), {
+          "text-anchor": "middle",
+          "font-size": compact ? "18" : "20",
+          "font-weight": "600",
+          fill: "#2f312d",
+          "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+        });
+
+        addLineText(group, node.type, node.x, y + 52, {
+          "text-anchor": "middle",
+          "font-size": compact ? "13.5" : "15",
+          fill: "#7a7e77",
+          "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+        });
+
+        if (options.showNote && noteText) {
+          const chipY = y + node.h + CHILD_NOTE_GAP_Y;
+          const chipW = Math.min(Math.max(node.w + 28, CHILD_NOTE_MIN_W), CHILD_NOTE_MAX_W);
+          const chipX = node.x - chipW / 2;
+          const lines = fitLines(noteText, chipW - 28, CHILD_NOTE_MAX_LINES);
+          const chipH = 20 + lines.length * 15;
+
+          group.appendChild(svgEl("rect", {
+            x: chipX,
+            y: chipY,
+            width: chipW,
+            height: chipH,
+            rx: 14,
+            ry: 14,
+            fill: "#fffdfa",
+            stroke: "#e4ddd2",
+            "stroke-width": "1"
+          }));
+
+          wrapText(group, noteText, node.x, chipY + 18, chipW - 28, 15, {
+            "text-anchor": "middle",
+            "font-size": "11.5",
+            fill: "#777b75",
+            "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+          }, CHILD_NOTE_MAX_LINES);
+        }
+
+        if (options.showGroupNote && noteText) {
+          const noteY = y + node.h + GROUP_NOTE_GAP_Y;
+          const noteW = Math.max(node.w + GROUP_NOTE_EXTRA_W, GROUP_NOTE_MIN_W);
+          const noteX = node.x - noteW / 2;
+          const lines = fitLines(noteText, noteW - 36, GROUP_NOTE_MAX_LINES);
+          const noteH = 20 + lines.length * 15;
+
+          group.appendChild(svgEl("rect", {
+            x: noteX,
+            y: noteY,
+            width: noteW,
+            height: noteH,
+            rx: 14,
+            ry: 14,
+            fill: "#fffdfa",
+            stroke: "#e4ddd2",
+            "stroke-width": "1"
+          }));
+
+          wrapText(group, noteText, node.x, noteY + 18, noteW - 36, 15, {
+            "text-anchor": "middle",
+            "font-size": "12",
+            fill: "#777b75",
+            "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+          }, GROUP_NOTE_MAX_LINES);
+        }
+
+        parent.appendChild(group);
+      }
+
+      function renderTree(svg) {
+        while (svg.firstChild) {
+          svg.removeChild(svg.firstChild);
+        }
+
+        svg.setAttribute("viewBox", "0 0 " + model.width + " " + model.height);
+        svg.setAttribute("width", model.width);
+        svg.setAttribute("height", model.height);
+        svg.appendChild(svgEl("rect", {
+          x: 0,
+          y: 0,
+          width: model.width,
+          height: model.height,
+          fill: "#fffefd"
+        }));
+
+        drawNode(svg, model.root, { compact: true, showNote: false, showGroupNote: false });
+
+        model.groups.forEach(function (group) {
+          svg.appendChild(svgEl("path", {
+            d: curvePath(model.root.x, model.root.y + model.root.h / 2, group.x, group.y - group.h / 2),
+            fill: "none",
+            stroke: "#d5d0c6",
+            "stroke-width": "1.5"
+          }));
+
+          drawNode(svg, group, { compact: false, showNote: false, showGroupNote: true });
+
+          group.children.forEach(function (child) {
+            svg.appendChild(svgEl("path", {
+              d: curvePath(group.x, group.y + group.h / 2, child.x, child.y - child.h / 2),
+              fill: "none",
+              stroke: "#d5d0c6",
+              "stroke-width": "1.4"
+            }));
+
+            drawNode(svg, child, { compact: true, showNote: true, showGroupNote: false });
+          });
+        });
+      }
+
+      renderTree(detailSvg);
+
+      let scale = 1;
+      let translateX = 0;
+      let translateY = 0;
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let originX = 0;
+      let originY = 0;
+      const minScale = 0.38;
+      const maxScale = 2.8;
+
+      function applyTransform() {
+        svgShell.style.transform = "translate(" + translateX + "px, " + translateY + "px) scale(" + scale + ")";
+      }
+
+      function setInitialView() {
+        const rect = viewerStage.getBoundingClientRect();
+        const fitScaleX = (rect.width * 0.92) / focus.width;
+        const fitScaleY = (rect.height * 0.9) / focus.height;
+        scale = Math.max(minScale, Math.min(maxScale, Math.min(fitScaleX, fitScaleY)));
+        translateX = 24 - focus.x * scale;
+        translateY = 18 - focus.y * scale;
+        applyTransform();
+      }
+
+      function zoomAt(pointX, pointY, nextScale) {
+        const clamped = Math.max(minScale, Math.min(maxScale, nextScale));
+        const worldX = (pointX - translateX) / scale;
+        const worldY = (pointY - translateY) / scale;
+        scale = clamped;
+        translateX = pointX - worldX * scale;
+        translateY = pointY - worldY * scale;
+        applyTransform();
+      }
+
+      viewerStage.addEventListener("wheel", function (event) {
+        event.preventDefault();
+        const rect = viewerStage.getBoundingClientRect();
+        zoomAt(event.clientX - rect.left, event.clientY - rect.top, scale * (event.deltaY < 0 ? 1.08 : 0.92));
+      }, { passive: false });
+
+      viewerStage.addEventListener("mousedown", function (event) {
+        dragging = true;
+        viewerStage.classList.add("dragging");
+        startX = event.clientX;
+        startY = event.clientY;
+        originX = translateX;
+        originY = translateY;
+      });
+
+      window.addEventListener("mousemove", function (event) {
+        if (!dragging) return;
+        translateX = originX + (event.clientX - startX);
+        translateY = originY + (event.clientY - startY);
+        applyTransform();
+      });
+
+      window.addEventListener("mouseup", function () {
+        dragging = false;
+        viewerStage.classList.remove("dragging");
+      });
+
+      viewerStage.addEventListener("dblclick", setInitialView);
+      window.addEventListener("resize", setInitialView);
+      setInitialView();
+    })();
+  </script>
+</body>
+</html>

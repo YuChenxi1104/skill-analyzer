@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fitness-island 结构图</title>
+  <style>
+    :root {
+      --paper: #fffdfa;
+      --ink: #2f312d;
+      --muted: #70746d;
+      --line: #d7d1c6;
+      --line-strong: #c9c3b7;
+      --frame: #e7e1d7;
+      --bg: #f6f3ec;
+      --shadow: 0 16px 44px rgba(47, 49, 45, 0.08);
+      --sans: "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+      --serif: "Georgia", "Times New Roman", "Noto Serif SC", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: linear-gradient(180deg, #f7f4ee 0%, #f2eee6 100%);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    body {
+      padding: 28px;
+    }
+
+    .slide {
+      min-height: calc(100vh - 56px);
+      border-radius: 28px;
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--frame);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3vw, 46px);
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .board {
+      border: 1px solid var(--frame);
+      border-radius: 22px;
+      background: #fffefd;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .board-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .board-toolbar {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 2;
+    }
+
+    .tree-wrap {
+      padding: 12px 18px 18px;
+    }
+
+    .tree-viewport {
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+    }
+
+    .tree-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #overviewSvg {
+      width: calc(100% - 36px);
+      max-width: 1680px;
+      margin: 0 auto;
+    }
+
+    #detailSvg {
+      width: auto;
+      height: auto;
+      display: block;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 23, 20, 0.72);
+      display: none;
+      z-index: 999;
+      backdrop-filter: blur(6px);
+    }
+
+    .overlay.open {
+      display: block;
+    }
+
+    .viewer {
+      position: absolute;
+      inset: 20px;
+      border-radius: 24px;
+      background: rgba(255, 253, 250, 0.985);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+      padding: 20px;
+    }
+
+    .viewer-head {
+      display: flex;
+      justify-content: flex-start;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .viewer-title {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(24px, 2vw, 34px);
+      line-height: 1.08;
+    }
+
+    .stage {
+      position: relative;
+      border: 1px solid var(--frame);
+      border-radius: 20px;
+      overflow: hidden;
+      background: #fffefd;
+      cursor: grab;
+    }
+
+    .stage.dragging {
+      cursor: grabbing;
+    }
+
+    .svg-shell {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: top left;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .hint {
+      position: absolute;
+      left: 18px;
+      bottom: 14px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 253, 250, 0.95);
+      border: 1px solid var(--frame);
+      color: var(--muted);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .stage-toolbar {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 253, 250, 0.96);
+      color: var(--ink);
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(47, 49, 45, 0.06);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        padding: 14px;
+      }
+
+      .slide {
+        min-height: auto;
+        padding: 18px;
+      }
+
+      .head,
+      .viewer-head {
+        flex-direction: column;
+      }
+
+      .viewer {
+        inset: 10px;
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="slide">
+    <div class="head">
+      <div>
+        <p class="eyebrow">Skill Breakdown · Structure View</p>
+        <h1>fitness-island 文件夹结构图</h1>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="board-toolbar">
+        <button class="icon-btn" type="button" id="openViewer" aria-label="放大查看" title="放大查看">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 3H3v6"></path>
+            <path d="M15 3h6v6"></path>
+            <path d="M9 21H3v-6"></path>
+            <path d="M15 21h6v-6"></path>
+            <path d="M3 9l6-6"></path>
+            <path d="M21 9l-6-6"></path>
+            <path d="M3 15l6 6"></path>
+            <path d="M21 15l-6 6"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="board-top">
+        <span>默认视图：整体结构</span>
+        <span>白底 · 细线 · 静态图阅读模式</span>
+      </div>
+      <div class="tree-wrap">
+        <div class="tree-viewport">
+          <svg id="overviewSvg" class="tree-svg" viewBox="0 0 4400 1500" aria-label="fitness-island 结构图概览"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="viewer">
+      <div class="viewer-head">
+        <div>
+          <h2 class="viewer-title">fitness-island 结构图</h2>
+        </div>
+      </div>
+      <div class="stage" id="viewerStage">
+        <div class="stage-toolbar">
+          <button class="icon-btn" type="button" id="resetView" aria-label="重置视角" title="重置视角">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+              <path d="M3 3v6h6"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" id="closeViewer" aria-label="退出全屏" title="退出全屏">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 9L3 3"></path>
+              <path d="M15 9l6-6"></path>
+              <path d="M9 15l-6 6"></path>
+              <path d="M15 15l6 6"></path>
+              <path d="M3 9V3h6"></path>
+              <path d="M21 9V3h-6"></path>
+              <path d="M3 15v6h6"></path>
+              <path d="M21 15v6h-6"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="svg-shell" id="svgShell">
+          <svg id="detailSvg" viewBox="0 0 4400 1500" width="4400" height="1500" aria-label="fitness-island 结构图大图"></svg>
+        </div>
+        <div class="hint">拖动平移 · 滚轮缩放</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const overviewSvg = document.getElementById("overviewSvg");
+      const detailSvg = document.getElementById("detailSvg");
+      const openViewer = document.getElementById("openViewer");
+      const closeViewer = document.getElementById("closeViewer");
+      const resetView = document.getElementById("resetView");
+      const overlay = document.getElementById("overlay");
+      const viewerStage = document.getElementById("viewerStage");
+      const svgShell = document.getElementById("svgShell");
+
+      const model = {
+        width: 4400,
+        height: 1500,
+        root: {
+          x: 2200,
+          y: 86,
+          w: 190,
+          h: 38,
+          label: "fitness-island/",
+          type: "Skill 根目录",
+          note: "训练计划、页面模板和验证工具"
+        },
+        groups: [
+          {
+            x: 520,
+            y: 266,
+            w: 210,
+            h: 72,
+            label: "SKILL.md",
+            type: "主说明",
+            note: "入口说明：定义什么时候触发、按什么流程工作。",
+            children: [
+              { x: 420, y: 520, w: 210, h: 70, label: "SKILL.md", type: "Markdown 入口说明", note: "Skill 的主说明文件" }
+            ]
+          },
+          {
+            x: 1350,
+            y: 266,
+            w: 210,
+            h: 72,
+            label: "assets/",
+            type: "模板素材",
+            note: "页面壳子、样式、交互逻辑和图像资源都在这里。",
+            children: [
+              { x: 920, y: 520, w: 220, h: 70, label: "index.html", type: "HTML 页面模板", note: "打卡页的基础结构" },
+              { x: 1180, y: 520, w: 220, h: 70, label: "app.js", type: "JavaScript 交互逻辑", note: "按钮、任务状态和弹层" },
+              { x: 1440, y: 520, w: 220, h: 70, label: "styles.css", type: "CSS 页面样式", note: "视觉风格和排版细节" },
+              { x: 1740, y: 520, w: 238, h: 70, label: "plan.example.json", type: "JSON 示例数据", note: "标准计划结构长什么样" },
+              { x: 2050, y: 520, w: 228, h: 70, label: "animal-island/", type: "图片素材目录", note: "背景图、图标和装饰资源" }
+            ]
+          },
+          {
+            x: 2320,
+            y: 266,
+            w: 210,
+            h: 72,
+            label: "scripts/",
+            type: "自动化工具",
+            note: "初始化项目、检查计划、校验模板资源。",
+            children: [
+              { x: 2270, y: 520, w: 228, h: 70, label: "init_project.sh", type: "Shell 初始化脚本", note: "复制出标准项目壳子" },
+              { x: 2580, y: 520, w: 236, h: 70, label: "validate_plan.py", type: "Python 校验脚本", note: "检查 plan.json 是否合理" },
+              { x: 2890, y: 520, w: 236, h: 70, label: "verify_assets.py", type: "Python 校验脚本", note: "检查模板是否被改坏" },
+              { x: 2430, y: 900, w: 224, h: 70, label: "collect_text.py", type: "Python 文本收集", note: "收集页面文字供字体处理" },
+              { x: 2750, y: 900, w: 252, h: 70, label: "build_font_subset.py", type: "Python 字体处理", note: "生成页面需要的字体子集" }
+            ]
+          },
+          {
+            x: 3300,
+            y: 266,
+            w: 220,
+            h: 72,
+            label: "references/",
+            type: "补充规则",
+            note: "详细说明不塞进主说明，而是拆到参考文档里。",
+            children: [
+              { x: 3140, y: 520, w: 246, h: 70, label: "minimum-friction.md", type: "Markdown 原则说明", note: "低阻力训练路线怎么设计" },
+              { x: 3425, y: 520, w: 220, h: 70, label: "plan-json.md", type: "Markdown 格式说明", note: "plan.json 应该怎么写" }
+            ]
+          },
+          {
+            x: 3980,
+            y: 266,
+            w: 210,
+            h: 72,
+            label: "outputs/",
+            type: "最终产物",
+            note: "用户最后真正会拿到的文件。",
+            children: [
+              { x: 3740, y: 520, w: 228, h: 70, label: "fitness-plan.md", type: "Markdown 训练计划", note: "给人读的训练路线" },
+              { x: 3995, y: 520, w: 188, h: 70, label: "plan.json", type: "JSON 页面数据", note: "给页面读取的数据" },
+              { x: 4220, y: 520, w: 188, h: 70, label: "index.html", type: "HTML 打卡页", note: "可直接打开的静态页面" }
+            ]
+          }
+        ]
+      };
+
+      function svgEl(name, attrs) {
+        const node = document.createElementNS(SVG_NS, name);
+        Object.keys(attrs || {}).forEach(function (key) {
+          node.setAttribute(key, attrs[key]);
+        });
+        return node;
+      }
+
+      function textWidthEstimate(text) {
+        return text.replace(/[A-Za-z0-9/_\-.]/g, "aa").length * 7.2;
+      }
+
+      function getWrappedLines(text, maxWidth) {
+        const chars = text.split("");
+        const lines = [];
+        let line = "";
+
+        for (let i = 0; i < chars.length; i += 1) {
+          const testLine = line + chars[i];
+          if (textWidthEstimate(testLine) > maxWidth && line) {
+            lines.push(line);
+            line = chars[i];
+          } else {
+            line = testLine;
+          }
+        }
+
+        if (line) {
+          lines.push(line);
+        }
+
+        return lines;
+      }
+
+      function wrapText(parent, text, x, y, maxWidth, lineHeight, attrs) {
+        const node = svgEl("text", attrs || {});
+        const lines = getWrappedLines(text, maxWidth);
+
+        lines.forEach(function (line, index) {
+          const span = svgEl("tspan", {
+            x: x,
+            y: y + index * lineHeight
+          });
+          span.textContent = line;
+          node.appendChild(span);
+        });
+
+        parent.appendChild(node);
+        return lines.length;
+      }
+
+      function addLineText(parent, text, x, y, attrs) {
+        const node = svgEl("text", Object.assign({ x: x, y: y }, attrs || {}));
+        node.textContent = text;
+        parent.appendChild(node);
+      }
+
+      function curvePath(fromX, fromY, toX, toY) {
+        const midY = (fromY + toY) / 2;
+        return [
+          "M", fromX, fromY,
+          "C", fromX, midY, toX, midY, toX, toY
+        ].join(" ");
+      }
+
+      function drawNode(parent, node, options) {
+        const x = node.x - node.w / 2;
+        const y = node.y - node.h / 2;
+        const group = svgEl("g");
+        const compact = !!options.compact;
+
+        group.appendChild(svgEl("rect", {
+          x: x,
+          y: y,
+          width: node.w,
+          height: node.h,
+          rx: compact ? 6 : 10,
+          ry: compact ? 6 : 10,
+          fill: "#fffefd",
+          stroke: "#dbd5ca",
+          "stroke-width": compact ? 1.1 : 1.3
+        }));
+
+        addLineText(group, node.label, node.x, y + (compact ? 28 : 26), {
+          "text-anchor": "middle",
+          "font-size": compact ? "18" : "20",
+          "font-weight": "600",
+          fill: "#2f312d",
+          "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+        });
+
+        addLineText(group, node.type, node.x, y + (compact ? 52 : 52), {
+          "text-anchor": "middle",
+          "font-size": compact ? "13.5" : "15",
+          fill: "#7a7e77",
+          "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+        });
+
+        if (options.showNote) {
+          const chipY = y + node.h + 22;
+          const chipW = Math.min(Math.max(node.w - 18, 150), 188);
+          const chipX = node.x - chipW / 2;
+          const lines = getWrappedLines(node.note, chipW - 26);
+          const chipH = 18 + lines.length * 15;
+
+          group.appendChild(svgEl("rect", {
+            x: chipX,
+            y: chipY,
+            width: chipW,
+            height: chipH,
+            rx: 14,
+            ry: 14,
+            fill: "#fffdfa",
+            stroke: "#e4ddd2",
+            "stroke-width": "1"
+          }));
+
+          wrapText(group, node.note, node.x, chipY + 18, chipW - 22, 14, {
+            "text-anchor": "middle",
+            "font-size": "12",
+            fill: "#777b75",
+            "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+          });
+        }
+
+        if (options.showGroupNote) {
+          wrapText(group, node.note, x + 8, y + node.h + 18, node.w + 80, 15, {
+            "font-size": "12.5",
+            fill: "#777b75",
+            "font-family": "Segoe UI, Microsoft YaHei UI, sans-serif"
+          });
+        }
+
+        parent.appendChild(group);
+      }
+
+      function renderTree(svg, config) {
+        while (svg.firstChild) {
+          svg.removeChild(svg.firstChild);
+        }
+
+        svg.setAttribute("viewBox", "0 0 " + model.width + " " + model.height);
+        svg.setAttribute("width", model.width);
+        svg.setAttribute("height", model.height);
+        svg.appendChild(svgEl("rect", {
+          x: 0,
+          y: 0,
+          width: model.width,
+          height: model.height,
+          fill: "#fffefd"
+        }));
+
+        drawNode(svg, model.root, { compact: true, showNote: false, showGroupNote: false });
+
+        model.groups.forEach(function (group) {
+          svg.appendChild(svgEl("path", {
+            d: curvePath(model.root.x, model.root.y + model.root.h / 2, group.x, group.y - group.h / 2),
+            fill: "none",
+            stroke: "#d5d0c6",
+            "stroke-width": "1.5"
+          }));
+
+          drawNode(svg, group, {
+            compact: false,
+            showNote: false,
+            showGroupNote: true
+          });
+
+          group.children.forEach(function (child) {
+            svg.appendChild(svgEl("path", {
+              d: curvePath(group.x, group.y + group.h / 2, child.x, child.y - child.h / 2),
+              fill: "none",
+              stroke: "#d5d0c6",
+              "stroke-width": "1.4"
+            }));
+
+            drawNode(svg, child, {
+              compact: true,
+              showNote: !!config.showChildNote,
+              showGroupNote: false
+            });
+          });
+        });
+      }
+
+      const sharedTreeConfig = { showChildNote: true };
+      renderTree(overviewSvg, sharedTreeConfig);
+      renderTree(detailSvg, sharedTreeConfig);
+
+      let scale = 1;
+      let translateX = 0;
+      let translateY = 0;
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let originX = 0;
+      let originY = 0;
+      const minScale = 0.38;
+      const maxScale = 2.8;
+
+      function applyTransform() {
+        svgShell.style.transform = "translate(" + translateX + "px, " + translateY + "px) scale(" + scale + ")";
+      }
+
+      function setInitialView() {
+        const rect = viewerStage.getBoundingClientRect();
+        const focus = {
+          x: 260,
+          y: 150,
+          width: 2000,
+          height: 980
+        };
+        const fitScaleX = (rect.width * 0.92) / focus.width;
+        const fitScaleY = (rect.height * 0.9) / focus.height;
+        scale = Math.max(minScale, Math.min(maxScale, Math.min(fitScaleX, fitScaleY)));
+        translateX = 24 - focus.x * scale;
+        translateY = 18 - focus.y * scale;
+        applyTransform();
+      }
+
+      function openModal() {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+        requestAnimationFrame(setInitialView);
+      }
+
+      function closeModal() {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+
+      function zoomAt(pointX, pointY, nextScale) {
+        const clamped = Math.max(minScale, Math.min(maxScale, nextScale));
+        const worldX = (pointX - translateX) / scale;
+        const worldY = (pointY - translateY) / scale;
+        scale = clamped;
+        translateX = pointX - worldX * scale;
+        translateY = pointY - worldY * scale;
+        applyTransform();
+      }
+
+      openViewer.addEventListener("click", openModal);
+      closeViewer.addEventListener("click", closeModal);
+      resetView.addEventListener("click", setInitialView);
+
+      overlay.addEventListener("click", function (event) {
+        if (event.target === overlay) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && overlay.classList.contains("open")) {
+          closeModal();
+        }
+      });
+
+      viewerStage.addEventListener(
+        "wheel",
+        function (event) {
+          event.preventDefault();
+          const rect = viewerStage.getBoundingClientRect();
+          zoomAt(event.clientX - rect.left, event.clientY - rect.top, scale * (event.deltaY < 0 ? 1.08 : 0.92));
+        },
+        { passive: false }
+      );
+
+      viewerStage.addEventListener("mousedown", function (event) {
+        dragging = true;
+        viewerStage.classList.add("dragging");
+        startX = event.clientX;
+        startY = event.clientY;
+        originX = translateX;
+        originY = translateY;
+      });
+
+      window.addEventListener("mousemove", function (event) {
+        if (!dragging) {
+          return;
+        }
+        translateX = originX + (event.clientX - startX);
+        translateY = originY + (event.clientY - startY);
+        applyTransform();
+      });
+
+      window.addEventListener("mouseup", function () {
+        dragging = false;
+        viewerStage.classList.remove("dragging");
+      });
+
+      window.addEventListener("resize", function () {
+        if (overlay.classList.contains("open")) {
+          setInitialView();
+        }
+      });
+
+      if (window.location.hash === "#open") {
+        openModal();
+      }
+    })();
+  </script>
+</body>
+</html>
