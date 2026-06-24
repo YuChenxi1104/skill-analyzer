@@ -60,7 +60,7 @@ def sample_structure_data() -> dict:
                             "h": 70,
                             "label": "SKILL.md",
                             "type": "Markdown 文档",
-                            "note": "写核心说明",
+                            "note": "核心规则",
                         }
                     ],
                 }
@@ -78,23 +78,20 @@ def sample_beginner_data() -> dict:
         "hero_subtitle": "一页看懂这个 skill 适不适合你，以及它怎么组织和交付。",
         "basic_info": {
             "name": "demo-skill",
-            "source": "GitHub · demo/example",
+            "source": "GitHub / demo/example",
             "url": "https://github.com/demo/example",
             "stars": "1.2k 星标",
             "forks": "86 Fork",
             "checked_date": "2026-06-22",
-            "one_liner": "适合把重复流程沉淀成可复用的 Skill。",
-            "fit_for": [
-                "你如果已经知道自己想解决什么问题，只差一套稳定做法。",
-                "你如果想把重复任务整理成可复用的工作流。"
-            ],
+            "one_liner": "适合把重复流程沉淀成可复用 Skill。",
+            "fit_for": [],
             "not_for": [
-                "你如果现在只想随手问一个临时问题，不打算沉淀方法。",
-                "你如果期待它自动替你完成所有实现判断。"
+                "想完全自定义来源",
+                "想做成自己的咨询系统",
             ],
         },
         "experience": {
-            "prepare_kicker": "准备阶段 · 你需要给什么",
+            "prepare_kicker": "准备阶段 / 你需要给什么",
             "required_intro": "先把这两件事直接告诉它",
             "required_cards": [
                 {
@@ -111,14 +108,14 @@ def sample_beginner_data() -> dict:
             "optional_intro": "这些材料有的话一起给",
             "optional_cards": [
                 {
-                    "icon": "📄",
+                    "icon": "📚",
                     "title": "现成资料",
                     "description": "已有文档、脚本或模板。",
                 }
             ],
             "prompt_title": "复制即用版提示词",
             "prompt_text": "帮我做一个关于【问题】的 skill。",
-            "done_kicker": "结束阶段 · 你会拿到什么",
+            "done_kicker": "结束阶段 / 你会拿到什么",
             "deliveries": [
                 {
                     "title": "1. 核心交付",
@@ -219,20 +216,20 @@ class RenderMergedPreviewTests(unittest.TestCase):
             self.assertIn("const structureModel =", html)
             self.assertIn("结构图", html)
             self.assertIn("流程图", html)
-            self.assertIn("适合你", html)
-            self.assertIn("不适合你", html)
-            self.assertIn("你如果已经知道自己想解决什么问题", html)
-            self.assertIn("你如果现在只想随手问一个临时问题", html)
-            self.assertIn("主线看 SKILL.md，支线看 references / assets / README", html)
-            self.assertIn("阶段层", html)
-            self.assertIn("动作层", html)
             self.assertIn('class="judgement-card risk"', html)
-            self.assertIn(".judgement-card.fit { display: none; }", html)
+            self.assertNotIn('class="judgement-card fit"', html)
+            self.assertNotIn(".judgement-card.fit { display: none; }", html)
             self.assertIn("想完全自定义来源", html)
             self.assertIn("想做成自己的咨询系统", html)
             self.assertIn('class="flow-block prepare-removed"', html)
-            self.assertIn(".flow-block.prepare-removed .flow-node:first-child .group-note { display: none; }", html)
-            self.assertIn(".flow-block.prepare-removed .flow-node:first-child .input-row { display: none; }", html)
+            self.assertIn(
+                ".flow-block.prepare-removed .flow-node:first-child .group-note { display: none; }",
+                html,
+            )
+            self.assertIn(
+                ".flow-block.prepare-removed .flow-node:first-child .input-row { display: none; }",
+                html,
+            )
             self.assertIn("复制即用版提示词", html)
             self.assertIn('id="copyPrompt"', html)
             self.assertIn('class="process-inline-frame"', html)
@@ -258,13 +255,11 @@ class RenderMergedPreviewTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.render_merged_preview(structure_path, beginner_path, output_path)
 
-    def test_validate_beginner_data_requires_two_required_cards(self) -> None:
+    def test_validate_beginner_data_still_accepts_empty_fit_for(self) -> None:
         module = load_script_module()
         data = sample_beginner_data()
-        data["experience"]["required_cards"] = data["experience"]["required_cards"][:1]
 
-        with self.assertRaises(ValueError):
-            module.validate_beginner_data(data)
+        module.validate_beginner_data(data)
 
 
 if __name__ == "__main__":

@@ -229,7 +229,7 @@ def build_html(
               ></iframe>
     """
 
-    return f"""<!doctype html>
+    html_output = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -438,7 +438,6 @@ def build_html(
     .judgement-card.fit h3 {{
       color: var(--accent-deep);
     }}
-    .judgement-card.fit {{ display: none; }}
     .judgement-card.risk h3 {{
       color: #8b4f3d;
     }}
@@ -1371,6 +1370,15 @@ def build_html(
 </body>
 </html>
 """
+    if not fit_for:
+        html_output = re.sub(
+            r'\s*<article class="judgement-card fit">.*?</article>\s*(?=<article class="judgement-card risk">)',
+            "\n",
+            html_output,
+            count=1,
+            flags=re.S,
+        )
+    return html_output
 
 
 def render_merged_preview(

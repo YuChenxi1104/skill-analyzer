@@ -25,11 +25,10 @@ description: Use when analyzing an existing Codex or Red Skill and turning it in
 你的第一任务不是全面拆解实现细节，而是先帮助用户快速判断：
 
 1. 这个 skill 是做什么的
-2. 适合谁用
-3. 不适合谁用
-4. 使用前需要准备什么
-5. 最终会拿到什么结果
-6. 是否值得继续深度学习
+2. 不适合谁用
+3. 使用前需要准备什么
+4. 最终会拿到什么结果
+5. 是否值得继续深度学习
 
 请优先站在“想用这个 skill 的普通用户”视角，而不是开发者视角。
 
@@ -43,17 +42,15 @@ description: Use when analyzing an existing Codex or Red Skill and turning it in
 - Skill 来源地址
 - Skill 热度
 - 解决问题
-- 适合你
 - 不适合你
 
 1.2 `体验流程`
 - 准备阶段（同一张卡片内）
-  - 安装提示词
   - 输入提示词
 - 结束阶段（同一张卡片内）
-  - 你会拿到：
-    - ...
-    - ...
+  1. `核心交付`
+  2. `如何浏览`
+  3. `如何修改与分享`
 
 ### 呈现方式
 
