@@ -84,7 +84,6 @@ def sample_beginner_data() -> dict:
             "forks": "86 Fork",
             "checked_date": "2026-06-22",
             "one_liner": "适合把重复流程沉淀成可复用 Skill。",
-            "fit_for": [],
             "not_for": [
                 "想完全自定义来源",
                 "想做成自己的咨询系统",
@@ -255,11 +254,6 @@ class RenderMergedPreviewTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.render_merged_preview(structure_path, beginner_path, output_path)
 
-    def test_validate_beginner_data_still_accepts_empty_fit_for(self) -> None:
-        module = load_script_module()
-        data = sample_beginner_data()
-
-        module.validate_beginner_data(data)
 
 
 if __name__ == "__main__":

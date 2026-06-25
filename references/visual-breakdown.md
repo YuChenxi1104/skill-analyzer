@@ -171,6 +171,61 @@
 
 不要把完整原句直接塞进结构图，让 HTML 自己兜底。
 
+## 画布尺寸预算公式
+
+结构图的画布尺寸不是随意设定的，必须根据内容量计算最低要求。
+
+### 最小宽度公式
+
+```
+canvas_width ≥ MODEL_SIDE_PADDING × 2
+              + Σ(max(group.w, children_total_span) for each group)
+              + (n_groups - 1) × MIN_GROUP_GAP_X
+```
+
+其中：
+- `MODEL_SIDE_PADDING` = 120
+- `MIN_GROUP_GAP_X` = 120（相邻两组之间的最小间距）
+- `children_total_span` = 该组所有子节点的 span 之和 + 子节点间隙
+- `childSpanWidth` = max(node.w, CHILD_NOTE_MIN_W)，即每个子节点至少占 CHILD_NOTE_MIN_W 的宽度（228px）
+- 每组子节点数量取 2~4，间隙取 MIN_CHILD_GAP_X（70px）
+
+推荐基准值：
+- 4 组场景：canvas_width ≥ 2200，canvas_height ≥ 900
+- 5 组场景：canvas_width ≥ 2600，canvas_height ≥ 1000
+- 6 组场景：canvas_width ≥ 3000，canvas_height ≥ 1100
+
+### 最小高度公式
+
+```
+canvas_height ≥ MODEL_SIDE_PADDING × 2
+              + root.h + ROOT_TO_GROUP_GAP
+              + max_group.h + GROUP_TO_CHILD_GAP
+              + max_child_row_h + CHILD_NOTE_GAP_Y + MAX_NOTE_H
+```
+
+其中：
+- `ROOT_TO_GROUP_GAP` = 120（根节点到组的纵向间距）
+- `GROUP_TO_CHILD_GAP` = 100（组到子节点的纵向间距）
+- `MAX_NOTE_H` = NOTE_HEIGHT_BASE + NOTE_MAX_LINES × LINE_HEIGHT（约 50px）
+
+### focus 区域规则
+
+`focus` 区域必须满足：
+- `focus.x = MODEL_SIDE_PADDING / 2`
+- `focus.y = MODEL_SIDE_PADDING / 2`
+- `focus.width = canvas_width - MODEL_SIDE_PADDING`
+- `focus.height = canvas_height - MODEL_SIDE_PADDING`
+- focus 内不能裁剪任何节点的 note 盒子
+- 禁止让 focus.width ≈ canvas_width（那等于没有缩放余地）
+
+### 组间距约束
+
+相邻两组之间必须满足：
+- 组中心的水平间距 ≥ MIN_GROUP_GAP_X（120px）
+- 组的右边缘 + MIN_GROUP_GAP_X ≤ 下一组的左边缘
+- 如果子节点 span 超出组框宽度，组间距要按子节点实际占位来计算
+
 ## 文案与布局的边界
 
 这里负责的是：

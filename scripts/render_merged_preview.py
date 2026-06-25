@@ -45,8 +45,6 @@ def validate_basic_info(data: dict[str, Any]) -> None:
         ["name", "source", "url", "stars", "forks", "checked_date", "one_liner"],
         "basic_info",
     )
-    if "fit_for" in data and not isinstance(data["fit_for"], list):
-        raise ValueError("basic_info.fit_for must be a list when provided")
     if "not_for" in data and not isinstance(data["not_for"], list):
         raise ValueError("basic_info.not_for must be a list when provided")
 
@@ -205,16 +203,7 @@ def build_html(
     basic = beginner["basic_info"]
     exp = beginner["experience"]
     adv = beginner["advanced"]
-    fit_for = basic.get("fit_for", [])
     not_for = basic.get("not_for", [])
-    fit_for_block = ""
-    if fit_for:
-        fit_for_block = f"""
-            <article class="judgement-card fit">
-              <h3>适合你</h3>
-              {render_judgement_list(fit_for, "这次产物里还没有补这一栏。")}
-            </article>
-        """
     structure_model_json = js_object(structure["model"])
     focus_json = js_object(structure["focus"])
     process_srcdoc = process_html_to_srcdoc(process_html)
@@ -853,10 +842,6 @@ def build_html(
             <p>{html.escape(basic['one_liner'])}</p>
           </div>
           <div class="judgement-grid">
-            <article class="judgement-card fit">
-              <h3>适合你</h3>
-              {render_judgement_list(fit_for, "这次产物里还没有补这一栏。")}
-            </article>
             <article class="judgement-card risk">
               <h3>不适合你</h3>
               {render_judgement_list(not_for, "这次产物里还没有补这一栏。")}
@@ -1370,14 +1355,6 @@ def build_html(
 </body>
 </html>
 """
-    if not fit_for:
-        html_output = re.sub(
-            r'\s*<article class="judgement-card fit">.*?</article>\s*(?=<article class="judgement-card risk">)',
-            "\n",
-            html_output,
-            count=1,
-            flags=re.S,
-        )
     return html_output
 
 
